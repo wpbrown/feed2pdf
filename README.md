@@ -1,7 +1,8 @@
 # feed2pdf
 
-Prereqs:
+`nix run`
 
-`sudo apt install usbutils sane imagemagick img2pdf pdfarranger`
+## Development
 
+`nix develop`
 
