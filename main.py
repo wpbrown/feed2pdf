@@ -18,6 +18,7 @@ pool = Semaphore(4)
 def done(cmd, *_):
     pool.release()
     processes_lock.acquire()
+    
     try:
         processes.remove(cmd)
     except ValueError:
@@ -67,6 +68,7 @@ def main(resolution: int, color: str, duplex: bool, deskew: bool, trim: bool, ba
             for line in scan_iter:
                 line = line.rstrip()
                 if line.startswith(scan_line):
+                    spin.write(f"scanned: {line}")
                     file_name = line[len(scan_line):]
                     out_file_name = file_name.replace('scanned', 'cleaned').replace('.pnm', '.png')
 
@@ -75,10 +77,12 @@ def main(resolution: int, color: str, duplex: bool, deskew: bool, trim: bool, ba
                         convert_args.append('-trim')
                     if deskew:
                         convert_args.extend(('-deskew', '30%'))
+                    convert_args.extend(('-alpha', 'remove','-alpha','off'))
                     convert_args.extend(('+repage', out_file_name))
 
                     pool.acquire()
                     process = convert(*convert_args, _bg=True, _done=done)
+                    spin.write(f"{convert_args[0]} - {process.pid} {process.is_alive()}")
                     processes_lock.acquire()
                     processes.append(process)
                     processing_count = len(processes)
@@ -99,6 +103,7 @@ def main(resolution: int, color: str, duplex: bool, deskew: bool, trim: bool, ba
                 i = 0
                 for process in processes_remaining:
                     spin.text = f'Processing {len(processes_remaining) - i}...'
+                    spin.write(f"ending: {process.pid} {process.is_alive()}")
                     process.wait()
                     i += 1
             spin.text = 'Processing complete.'
